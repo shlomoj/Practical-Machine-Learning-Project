@@ -1,0 +1,108 @@
+---
+title: "Practical Machine Learning Project"
+author: "Solomon Javitt"
+date: "Thursday, September 16, 2015"
+output: 
+  html_document:
+    pandoc_args: [
+      "+RTS", "-K64m",
+      "-RTS"
+    ]
+---
+
+# Identifying mistaken exercise techniques using random forest models
+## Executive summary
+
+A random forest modeling technique was used to create a model to determine whether an exercise was performed correctly given imput from a *FitBit* like device.
+The model achieved an accuracy of above 99% identifying correct and 4 different types of incorrect performance
+
+## Introduction
+Devices such as *FitBit* generate a large amount of data that can be used for predictive modeling.  This paper details at attempt to used such data to identify whether individuals are performing an exercise correctly.
+Data consists of measurements from 6 young (20-28) male participants performing a repeated exercise (arm curl with dumbbell) correctly and incorrectly in 5 different ways.
+Data was provided courtesy of [Groupware@LES](http://groupware.les.inf.puc-rio.br/har). It can be downloaded [here](http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv). To run this code it should be in the working directory.
+
+## Model development
+```{r echo=F, message=F, results="hide"}
+  library(ggplot2)
+  library(caret)
+  library(randomForest)
+
+```
+### Cleading data
+The data is loaded. Unnecessary predictors are removed at this stage to save computing power. These include: 
+
+* summary predictors - only available for certain measurements. The validation set (by which the model is to be judged) does not have these predictors so they should be removed from the training set.
+* user name - The model should be generalizeable to larger populations. Including a specific user profile mght require the model to be trained on indvidual users in the future
+* timestamp data - although timeseries data could theoretically be very useful for modeling the validation dataset requires a prediction based on a single snapshot in time. This too should be removed from the training set.
+* "new_window"", "num_window" variables - unclear what they mean.
+* highly skewed data - here defined as data where 1st and 3rd percentiles are equal
+
+```{r clean}
+  train.dat <- read.csv("pml-training.csv")
+  # remove summary data (identified by columns that have an NA is some rows)
+  rem <- sapply(train.dat, anyNA)
+  train.dat <- train.dat[,!rem]
+  # remove timeseries and user nata
+  train.dat <- train.dat[,-(1:7)]
+  l <- sapply(train.dat, nlevels)
+  # change factor data to numeric and remove meaningless factor data
+  l <- (l>0 & l<5)
+  train.dat <- train.dat[,!l]
+  train.dat <- cbind(
+    as.data.frame(sapply(train.dat[1:76], as.numeric)), 
+    classe = train.dat[,77])
+  # remove highly skewed data
+  t <- sapply(train.dat[1:76], quantile, probs=c(.25,.75))
+  t <- t(t)
+  t.i <- t[,1] == t[,2]
+  t.i[77] <- FALSE
+  train.dat <- train.dat[,!t.i]
+
+train.dat <- train.dat[complete.cases(train.dat),]
+```
+
+### Dividing dataset
+Training data is divided into training and testing sets.  Although not strictly necessary as we will be using other methods of cross-validation it adds an extra element of validation to the final model.
+
+### Model generation
+A random forest model is created using the training set. Only a sample is used to reduce computing power needs.
+
+```{r createModel}
+  set.seed(1000)
+  inTrain <- createDataPartition(train.dat$classe, p=.75)[[1]]
+  tr <- train.dat[inTrain,]
+  te <- train.dat[-inTrain,]
+  #tr.s <- tr[sample(1:nrow(tr), 5000, replace=F),]
+  
+  m.rf <- randomForest(classe~., data=tr, mtry=27)
+    
+  #m.rf
+```
+  
+  As seen a classification model was created as the parameters were tuned to get the highest accuracy.
+  
+### Performance
+The performance of the model is estimated using the "Out of bag" estimation for random forest models:
+
+``` {r perform1}
+  m.rf
+```
+
+Although not strictly necessary we can verify this performance in the testing set.  Keep in mind that accuracy = 1 - error rate.
+
+``` {r perform2}
+  confusionMatrix(te$classe, predict(m.rf, te))
+```
+
+## Discussion
+
+In this project a random forest model was created to predict whether a user is correctly performing the given exercise.  The final model achieved a high accuracy both in OOB estimates of training data and in an additional dataset that was not used to train the model.  These values were also similar which suggests that it is a reliable prediction of the true accuracy.
+
+For this project a random forest algorithm was chosen.  Reasons for this include:
+
+* The need for a classification algorithm which is less suited for simpler models (eg linear models)
+* The presence of a large amount of highly correlated predictors (correlation data not shown).
+
+The disadvanage of the model is in in the large amount of computing power necessary to generate it. More sophisticated modeling techniques such as ensembling of different algorithms or encorporating timeseries elements might achieve higher performance.  They however, add at element of complexity.
+
+In summary, the random forest model achieves a high performance that is likely satisfactory for real-world applications with relative simplicity and a modest computing cost.
