@@ -65,7 +65,7 @@ train.dat <- train.dat[complete.cases(train.dat),]
 Training data is divided into training and testing sets.  Although not strictly necessary as we will be using other methods of cross-validation it adds an extra element of validation to the final model.
 
 ### Model generation
-A random forest model is created using the training set. Only a sample is used to reduce computing power needs.
+A random forest model is created using the training set.
 
 ```{r createModel}
   set.seed(1000)

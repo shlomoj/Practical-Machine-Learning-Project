@@ -117,7 +117,7 @@ train.dat &lt;- train.dat[complete.cases(train.dat),]</code></pre>
 </div>
 <div id="model-generation" class="section level3">
 <h3>Model generation</h3>
-<p>A random forest model is created using the training set. Only a sample is used to reduce computing power needs.</p>
+<p>A random forest model is created using the training set.</p>
 <pre class="r"><code>  set.seed(1000)
   inTrain &lt;- createDataPartition(train.dat$classe, p=.75)[[1]]
   tr &lt;- train.dat[inTrain,]
@@ -186,7 +186,11 @@ train.dat &lt;- train.dat[complete.cases(train.dat),]</code></pre>
 <div id="discussion" class="section level2">
 <h2>Discussion</h2>
 <p>In this project a random forest model was created to predict whether a user is correctly performing the given exercise. The final model achieved a high accuracy both in OOB estimates of training data and in an additional dataset that was not used to train the model. These values were also similar which suggests that it is a reliable prediction of the true accuracy.</p>
-<p>For this project a random forest algorithm was chosen. Reasons for this include: * The need for a classification algorithm which is less suited for simpler models (eg linear models) * The presence of a large amount of highly correlated predictors (correlation data not shown).</p>
+<p>For this project a random forest algorithm was chosen. Reasons for this include:</p>
+<ul>
+<li>The need for a classification algorithm which is less suited for simpler models (eg linear models)</li>
+<li>The presence of a large amount of highly correlated predictors (correlation data not shown).</li>
+</ul>
 <p>The disadvanage of the model is in in the large amount of computing power necessary to generate it. More sophisticated modeling techniques such as ensembling of different algorithms or encorporating timeseries elements might achieve higher performance. They however, add at element of complexity.</p>
 <p>In summary, the random forest model achieves a high performance that is likely satisfactory for real-world applications with relative simplicity and a modest computing cost.</p>
 </div>
